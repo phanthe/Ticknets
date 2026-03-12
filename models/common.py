@@ -183,6 +183,14 @@ def conv1x1_block(in_channels,
              use_bn=use_bn,
              activation=activation)
 
+def conv1x1_group_block(in_channels, out_channels, groups, stride=1):
+    """1x1 convolution with grouping, batch norm, and activation."""
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, 
+                  groups=groups, bias=False),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(inplace=True) # Or whatever activation the paper/repo uses
+    )
 def conv3x3_block(in_channels,
                   out_channels,
                   stride=1,
