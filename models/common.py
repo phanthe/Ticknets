@@ -182,25 +182,44 @@ def conv1x1_block(in_channels,
              bias=bias,
              use_bn=use_bn,
              activation=activation)
-
 import torch.nn as nn
 
-def conv1x1_group_block(in_channels, out_channels, groups, stride=1, use_bn=True):
-    """1x1 convolution with grouping, optional batch norm, and activation."""
+def conv1x1_group_block(in_channels, out_channels, groups, stride=1, use_bn=True, activation=True):
+    """1x1 convolution with grouping, optional batch norm, and flexible activation."""
     layers = []
     
-    # If using batch norm, bias is redundant so we set bias=not use_bn
+    # 1. Convolutional Layer
     layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, 
                             groups=groups, bias=not use_bn))
     
-    # Conditionally add BatchNorm
+    # 2. Optional Batch Norm
     if use_bn:
         layers.append(nn.BatchNorm2d(out_channels))
         
-    # Add activation (adjust ReLU to whatever activation the rest of your model uses if needed)
-    layers.append(nn.ReLU(inplace=True))
-    
+    # 3. Flexible Activation
+    if activation:
+        if isinstance(activation, str):
+            # If passed as a string like activation='relu' or activation='silu'
+            act_lower = activation.lower()
+            if act_lower == 'relu':
+                layers.append(nn.ReLU(inplace=True))
+            elif act_lower in ['silu', 'swish']:
+                layers.append(nn.SiLU(inplace=True))
+            elif act_lower == 'leakyrelu':
+                layers.append(nn.LeakyReLU(0.1, inplace=True))
+            else:
+                # Default fallback
+                layers.append(nn.ReLU(inplace=True))
+        elif isinstance(activation, nn.Module):
+            # If passed an actual PyTorch layer (e.g., activation=nn.GELU())
+            layers.append(activation)
+        else:
+            # If passed as just `True`
+            layers.append(nn.ReLU(inplace=True))
+            
     return nn.Sequential(*layers)
+
+
 def conv3x3_block(in_channels,
                   out_channels,
                   stride=1,
