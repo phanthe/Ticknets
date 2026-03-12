@@ -183,14 +183,24 @@ def conv1x1_block(in_channels,
              use_bn=use_bn,
              activation=activation)
 
-def conv1x1_group_block(in_channels, out_channels, groups, stride=1):
-    """1x1 convolution with grouping, batch norm, and activation."""
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, 
-                  groups=groups, bias=False),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True) # Or whatever activation the paper/repo uses
-    )
+import torch.nn as nn
+
+def conv1x1_group_block(in_channels, out_channels, groups, stride=1, use_bn=True):
+    """1x1 convolution with grouping, optional batch norm, and activation."""
+    layers = []
+    
+    # If using batch norm, bias is redundant so we set bias=not use_bn
+    layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, 
+                            groups=groups, bias=not use_bn))
+    
+    # Conditionally add BatchNorm
+    if use_bn:
+        layers.append(nn.BatchNorm2d(out_channels))
+        
+    # Add activation (adjust ReLU to whatever activation the rest of your model uses if needed)
+    layers.append(nn.ReLU(inplace=True))
+    
+    return nn.Sequential(*layers)
 def conv3x3_block(in_channels,
                   out_channels,
                   stride=1,
